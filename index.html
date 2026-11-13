@@ -525,6 +525,28 @@
             .stats-grid { grid-template-columns: 1fr; }
             .form-row { grid-template-columns: 1fr; }
         }
+
+        /* ---------- Auto-import ---------- */
+        .import-help { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 14px; }
+        .import-note { font-size: 12px; color: var(--text-secondary); margin-top: 14px; line-height: 1.5; }
+        .import-providers { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+        .import-providers span { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: var(--bg); border: 1px solid var(--border); color: var(--text-secondary); }
+        .import-textarea { resize: vertical; min-height: 120px; font-family: inherit; line-height: 1.5; }
+        .import-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .import-row { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--border); }
+        .import-row:last-child { border-bottom: none; }
+        .import-row.dim { opacity: .55; }
+        .import-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
+        .import-main { flex: 1; min-width: 0; }
+        .import-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .import-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .import-row select { padding: 4px 8px; font-size: 12px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-family: inherit; max-width: 150px; }
+        .import-flag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f59e0b22; color: #b45309; }
+        .import-skipped { margin-top: 14px; font-size: 12px; color: var(--text-secondary); }
+        .import-skipped summary { cursor: pointer; font-weight: 600; }
+        .import-skipped li { margin: 4px 0 0 18px; word-break: break-word; }
+        .tx-source { font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); margin-left: 6px; }
+        @media (max-width: 600px) { .import-row { flex-wrap: wrap; } .import-row select { max-width: none; } }
     </style>
 </head>
 <body>
@@ -579,6 +601,7 @@
                         <div class="nav-section-title">Overview</div>
                         <div class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</div>
                         <div class="nav-item" data-page="transactions"><span class="nav-icon">💳</span> Transactions</div>
+                        <div class="nav-item" data-page="import"><span class="nav-icon">📲</span> Auto-Import</div>
                     </div>
                     <div class="nav-section">
                         <div class="nav-section-title">Planning</div>
@@ -678,6 +701,52 @@
                             </div>
                         </div>
                         <div id="allTransactions"></div>
+                    </div>
+                </div>
+
+                <!-- AUTO-IMPORT -->
+                <div class="page-section" id="page-import">
+                    <div class="card" id="phoneSyncCard" style="display:none;margin-bottom:20px">
+                        <div class="card-header"><h3 class="card-title">📱 Automatic Capture (this phone)</h3></div>
+                        <p class="import-help" id="phoneSyncStatus"></p>
+                        <div class="import-actions">
+                            <button class="btn btn-primary" id="phoneEnableBtn" onclick="enablePhoneSync()">Enable automatic capture</button>
+                            <button class="btn btn-outline" id="phoneScanBtn" onclick="scanPastMessages()">Scan past 90 days</button>
+                        </div>
+                        <p class="import-note">🔒 Only messages that look like money alerts (a Ksh/KES amount plus words like confirmed, debited or credited, from a named sender such as MPESA or your bank) are read. Personal chats are ignored. Nothing leaves your phone.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">📲 Auto-Import from Mobile Money &amp; Banks</h3></div>
+                        <p class="import-help">Paste your M-Pesa, Airtel Money or bank SMS alerts (several at once is fine) or upload a statement CSV. FreedomFi reads the amount, date and who it was for, works out whether it is income or an expense, and picks a category. You review everything before it is saved.</p>
+                        <div class="import-providers">
+                            <span>M-Pesa</span><span>Airtel Money</span><span>T-Kash</span><span>Equity</span><span>KCB</span><span>Co-op</span><span>Absa</span><span>NCBA</span><span>Stanbic</span><span>Family</span><span>DTB</span><span>I&amp;M</span><span>+ other banks</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="importText">Paste messages</label>
+                            <textarea class="form-input import-textarea" id="importText" rows="7" placeholder="QKJ7H2X9AB Confirmed. Ksh1,500.00 sent to JOHN KAMAU 0712345678 on 12/11/26 at 2:15 PM. New M-PESA balance is Ksh3,250.50. Transaction cost, Ksh23.00."></textarea>
+                        </div>
+                        <div class="import-actions">
+                            <button class="btn btn-primary" onclick="previewImport()">🔍 Read Messages</button>
+                            <label class="btn btn-outline" for="importFile" style="cursor:pointer">📄 Upload Statement (CSV)</label>
+                            <input type="file" id="importFile" accept=".csv,.txt,text/csv,text/plain" style="display:none" onchange="handleImportFile(this)">
+                            <button class="btn btn-outline" onclick="pasteFromClipboard()">📋 Paste from Clipboard</button>
+                        </div>
+                        <p class="import-note">🔒 Everything is processed on this device only. Messages are never uploaded. Bank and mobile money PDFs: open in Excel/Sheets or ask your provider for the CSV version.</p>
+                    </div>
+                    <div class="card" id="importPreviewCard" style="display:none;margin-top:20px">
+                        <div class="card-header">
+                            <h3 class="card-title" id="importPreviewTitle">Review</h3>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                                <button class="btn btn-outline btn-sm" onclick="toggleImportAll(true)">Select all</button>
+                                <button class="btn btn-outline btn-sm" onclick="toggleImportAll(false)">None</button>
+                            </div>
+                        </div>
+                        <div id="importPreviewList"></div>
+                        <div id="importSkipped"></div>
+                        <div class="import-actions" style="margin-top:16px">
+                            <button class="btn btn-primary" id="importConfirmBtn" onclick="confirmImport()">✅ Add Selected</button>
+                            <button class="btn btn-outline" onclick="clearImport()">Cancel</button>
+                        </div>
                     </div>
                 </div>
 
@@ -894,6 +963,7 @@
         </div>
     </div>
 
+    <script src="mobile-money-parser.js"></script>
     <script>
         // ==================== AUTH ====================
         let authMode = 'login';
@@ -989,6 +1059,10 @@
                 { name: 'Utilities', icon: '⚡', color: '#f97316' },
                 { name: 'Insurance', icon: '🛡️', color: '#6366f1' },
                 { name: 'Personal', icon: '💇', color: '#14b8a6' },
+                { name: 'Airtime & Data', icon: '📶', color: '#0ea5e9' },
+                { name: 'Savings & Loans', icon: '🏦', color: '#84cc16' },
+                { name: 'Cash Withdrawal', icon: '🏧', color: '#a855f7' },
+                { name: 'Fees & Charges', icon: '🧾', color: '#f43f5e' },
                 { name: 'Other', icon: '📦', color: '#64748b' }
             ],
             income: [
@@ -1002,7 +1076,7 @@
 
         const DEFAULT_SETTINGS = {
             name: 'Friend',
-            currency: '$',
+            currency: 'Ksh',
             freedomTarget: 1000000,
             savingsTarget: 2000,
             theme: 'light'
@@ -1036,6 +1110,8 @@
             setGreeting(s.name !== 'Friend' ? s.name : activeUser);
             populateCategorySelects();
             renderAll();
+            refreshPhoneSyncCard();
+            syncFromAndroid();
 
             document.querySelectorAll('.nav-item[data-page]').forEach(item => {
                 item.addEventListener('click', () => navigateTo(item.dataset.page));
@@ -1188,7 +1264,7 @@
                     <div class="tx-icon" style="background:${cat.color}15">${cat.icon}</div>
                     <div class="tx-details">
                         <div class="tx-name">${t.name}</div>
-                        <div class="tx-category">${t.category}</div>
+                        <div class="tx-category">${t.category}${t.source ? `<span class="tx-source">${t.source}</span>` : ''}${t.review ? '<span class="tx-source" style="color:#b45309">check</span>' : ''}</div>
                     </div>
                     <div>
                         <div class="tx-amount ${t.type}">${t.type === 'expense' ? '-' : '+'}${s.currency}${formatNum(t.amount)}</div>
@@ -1541,7 +1617,7 @@
             if (!confirm('This will delete ALL your data. Are you sure?')) return;
             if (!confirm('Really? This cannot be undone!')) return;
             const prefix = getPrefix();
-            ['transactions','budgets','goals','recurring','settings'].forEach(k => localStorage.removeItem(prefix + k));
+            ['transactions','budgets','goals','recurring','settings','scanned'].forEach(k => localStorage.removeItem(prefix + k));
             location.reload();
         }
 
@@ -1563,6 +1639,236 @@
             a.download = filename;
             a.click();
         }
+
+        // ==================== AUTO-IMPORT ====================
+        let pendingImport = [];
+
+        function esc(v) {
+            return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+
+        function previewImport() {
+            const text = document.getElementById('importText').value;
+            if (!text.trim()) return alert('Paste at least one message first.');
+            if (typeof FreedomParser === 'undefined') return alert('The message reader failed to load. Refresh the page and try again.');
+            showImportResult(FreedomParser.parseMany(text));
+        }
+
+        function handleImportFile(input) {
+            const file = input.files && input.files[0];
+            input.value = '';
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) return alert('That file is too large (max 5 MB).');
+            const reader = new FileReader();
+            reader.onload = () => {
+                const text = String(reader.result || '');
+                const res = FreedomParser.parseStatementCSV(text);
+                if (res.error) {
+                    // Might be a text export of messages instead of a table.
+                    const fallback = FreedomParser.parseMany(text);
+                    if (fallback.txs.length) return showImportResult(fallback);
+                    return alert(res.error);
+                }
+                showImportResult(res);
+            };
+            reader.onerror = () => alert('Could not read that file.');
+            reader.readAsText(file);
+        }
+
+        async function pasteFromClipboard() {
+            try {
+                const t = await navigator.clipboard.readText();
+                if (!t || !t.trim()) return alert('Your clipboard is empty.');
+                document.getElementById('importText').value = t;
+                previewImport();
+            } catch {
+                alert('Your browser blocked clipboard access. Paste into the box with Ctrl+V (or long-press) instead.');
+            }
+        }
+
+        function showImportResult(res) {
+            const existing = getData('transactions');
+            const known = new Set(existing.map(t => t.key).filter(Boolean));
+            const manual = new Set(existing.filter(t => !t.key).map(t => [t.date, t.type, Number(t.amount).toFixed(2)].join('|')));
+            pendingImport = res.txs.map(t => {
+                const dupKey = known.has(t.key);
+                const maybe = !dupKey && manual.has([t.date, t.type, Number(t.amount).toFixed(2)].join('|'));
+                return { ...t, dup: dupKey, maybe, selected: !dupKey && !maybe };
+            });
+            renderImportPreview(res);
+        }
+
+        function renderImportPreview(res) {
+            const s = getSettings();
+            const card = document.getElementById('importPreviewCard');
+            card.style.display = '';
+            const newCount = pendingImport.filter(t => !t.dup).length;
+            const inc = pendingImport.filter(t => t.selected && t.type === 'income').reduce((a, t) => a + t.amount, 0);
+            const exp = pendingImport.filter(t => t.selected && t.type === 'expense').reduce((a, t) => a + t.amount, 0);
+            document.getElementById('importPreviewTitle').textContent =
+                `Found ${pendingImport.length} transaction${pendingImport.length === 1 ? '' : 's'}` + (newCount !== pendingImport.length ? ` (${pendingImport.length - newCount} already added)` : '');
+
+            const list = document.getElementById('importPreviewList');
+            if (!pendingImport.length) {
+                list.innerHTML = '<div class="empty-state"><div class="emoji">🤔</div><p>No transactions could be read from that text. Check that it includes the amount and the confirmation message.</p></div>';
+            } else {
+                list.innerHTML = pendingImport.map((t, i) => {
+                    const cats = CATEGORIES[t.type].map(c => `<option value="${esc(c.name)}" ${c.name === t.category ? 'selected' : ''}>${c.icon} ${esc(c.name)}</option>`).join('');
+                    const flags = (t.dup ? '<span class="import-flag">Already added</span>' : '')
+                        + (t.maybe ? '<span class="import-flag">Similar entry exists</span>' : '')
+                        + (t.confidence === 'medium' ? '<span class="import-flag">Check details</span>' : '');
+                    return `
+                    <div class="import-row ${t.dup ? 'dim' : ''}">
+                        <input type="checkbox" ${t.selected ? 'checked' : ''} ${t.dup ? 'disabled' : ''} onchange="toggleImportRow(${i}, this.checked)" aria-label="Include transaction">
+                        <div class="import-main">
+                            <div class="import-name">${esc(t.name)}</div>
+                            <div class="import-meta"><span>${esc(formatDate(t.date))}</span><span>·</span><span>${esc(t.source)}</span>${flags}</div>
+                        </div>
+                        <select onchange="setImportCategory(${i}, this.value)" ${t.dup ? 'disabled' : ''} aria-label="Category">${cats}</select>
+                        <div class="tx-amount ${t.type}" style="min-width:90px;text-align:right">${t.type === 'expense' ? '-' : '+'}${esc(s.currency)}${formatNum(t.amount)}</div>
+                    </div>`;
+                }).join('');
+            }
+
+            const sk = res.skipped || [];
+            const realSkips = sk.filter(x => !/Duplicate/.test(x.reason));
+            document.getElementById('importSkipped').innerHTML = realSkips.length
+                ? `<details class="import-skipped"><summary>${realSkips.length} message${realSkips.length === 1 ? '' : 's'} skipped</summary><ul>${realSkips.map(x => `<li><b>${esc(x.reason)}</b>: ${esc(x.raw)}</li>`).join('')}</ul></details>` : '';
+
+            updateImportButton();
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function updateImportButton() {
+            const n = pendingImport.filter(t => t.selected).length;
+            const btn = document.getElementById('importConfirmBtn');
+            btn.textContent = `✅ Add ${n} Selected`;
+            btn.disabled = n === 0;
+            btn.style.opacity = n === 0 ? '.5' : '';
+        }
+
+        function toggleImportRow(i, on) { pendingImport[i].selected = on; updateImportButton(); }
+        function toggleImportAll(on) {
+            pendingImport.forEach(t => { if (!t.dup) t.selected = on; });
+            renderImportPreview({ skipped: [] });
+        }
+        function setImportCategory(i, cat) { pendingImport[i].category = cat; }
+
+        function confirmImport() {
+            const chosen = pendingImport.filter(t => t.selected && !t.dup);
+            if (!chosen.length) return;
+            const txs = getData('transactions');
+            const known = new Set(txs.map(t => t.key).filter(Boolean));
+            let added = 0;
+            chosen.forEach(t => {
+                if (known.has(t.key)) return;
+                known.add(t.key);
+                txs.push({ id: uid(), name: t.name, amount: t.amount, type: t.type, category: t.category, date: t.date, source: t.source, key: t.key });
+                added++;
+            });
+            setData('transactions', txs);
+            clearImport();
+            renderAll();
+            alert(`Added ${added} transaction${added === 1 ? '' : 's'}.`);
+            navigateTo('transactions');
+        }
+
+        function clearImport() {
+            pendingImport = [];
+            document.getElementById('importText').value = '';
+            document.getElementById('importPreviewCard').style.display = 'none';
+            document.getElementById('importPreviewList').innerHTML = '';
+            document.getElementById('importSkipped').innerHTML = '';
+        }
+
+        // ==================== ANDROID AUTO-CAPTURE ====================
+        // When FreedomFi runs inside the companion Android app, `window.FreedomAndroid`
+        // is provided by the app. It queues money-alert SMS; we read, add and acknowledge them here.
+        function androidBridge() { return (typeof window !== 'undefined' && window.FreedomAndroid) || null; }
+
+        function showToast(msg) {
+            let t = document.getElementById('ffToast');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'ffToast';
+                t.setAttribute('role', 'status');
+                t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:12px 18px;border-radius:12px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw;text-align:center;transition:opacity .3s';
+                document.body.appendChild(t);
+            }
+            t.textContent = msg;
+            t.style.opacity = '1';
+            clearTimeout(showToast._h);
+            showToast._h = setTimeout(() => { t.style.opacity = '0'; }, 4000);
+        }
+
+        function syncFromAndroid() {
+            const A = androidBridge();
+            if (!A || typeof FreedomParser === 'undefined' || !localStorage.getItem('ff_active_user')) return 0;
+            let pending;
+            try { pending = JSON.parse(A.getPending() || '[]'); } catch { return 0; }
+            if (!Array.isArray(pending) || !pending.length) return 0;
+
+            const txs = getData('transactions');
+            const known = new Set(txs.map(t => t.key).filter(Boolean));
+            let added = 0;
+            const ids = [];
+            pending.forEach(item => {
+                if (!item || typeof item.body !== 'string') return;
+                if (item.id) ids.push(item.id);
+                const when = item.ts ? new Date(Number(item.ts)) : new Date();
+                const res = FreedomParser.parseMessage(item.body, { today: when });
+                if (!res.ok) return;
+                res.txs.forEach(t => {
+                    if (known.has(t.key)) return;
+                    known.add(t.key);
+                    txs.push({ id: uid(), name: t.name, amount: t.amount, type: t.type, category: t.category,
+                               date: t.date, source: t.source, key: t.key, review: t.confidence !== 'high' || undefined });
+                    added++;
+                });
+            });
+            if (added) { setData('transactions', txs); renderAll(); }
+            try { A.ack(JSON.stringify(ids)); } catch {}
+            if (added) showToast(`📲 ${added} new transaction${added === 1 ? '' : 's'} captured`);
+            return added;
+        }
+
+        function refreshPhoneSyncCard() {
+            const A = androidBridge();
+            const card = document.getElementById('phoneSyncCard');
+            if (!A) { card.style.display = 'none'; return; }
+            card.style.display = '';
+            let on = false;
+            try { on = !!A.hasPermission(); } catch {}
+            document.getElementById('phoneSyncStatus').textContent = on
+                ? '✅ Automatic capture is on. New M-Pesa, Airtel Money and bank alerts are added to FreedomFi as soon as they arrive.'
+                : 'Turn this on and FreedomFi will add your M-Pesa, Airtel Money and bank transactions by itself, with no copying and pasting. Android will ask for permission to read SMS.';
+            document.getElementById('phoneEnableBtn').style.display = on ? 'none' : '';
+            document.getElementById('phoneScanBtn').style.display = on ? '' : 'none';
+        }
+
+        function enablePhoneSync() {
+            const A = androidBridge();
+            if (A) A.requestPermission();
+        }
+
+        function scanPastMessages() {
+            const A = androidBridge();
+            if (!A) return;
+            showToast('Scanning your past messages…');
+            A.scanInbox(90);
+        }
+
+        // Called by the app when permission is answered, and when new messages are queued.
+        window.onSmsPermission = function () { refreshPhoneSyncCard(); if (androidBridge() && androidBridge().hasPermission()) scanPastMessagesOnce(); };
+        window.onNewSms = function () { syncFromAndroid(); };
+
+        function scanPastMessagesOnce() {
+            const flag = getPrefix() + 'scanned';
+            try { if (localStorage.getItem(flag)) return; localStorage.setItem(flag, '1'); } catch {}
+            scanPastMessages();
+        }
+
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) syncFromAndroid(); });
 
         // ==================== NAVIGATION ====================
         function navigateTo(page) {
