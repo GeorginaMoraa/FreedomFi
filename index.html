@@ -525,6 +525,52 @@
             .stats-grid { grid-template-columns: 1fr; }
             .form-row { grid-template-columns: 1fr; }
         }
+
+        /* ---------- Import ---------- */
+        .imp-lead { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 18px; max-width: 70ch; }
+        .imp-drop { border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; transition: var(--transition); cursor: pointer; background: var(--bg); }
+        .imp-drop:hover, .imp-drop:focus-visible, .imp-drop.over { border-color: var(--accent); background: var(--accent-light); outline: none; }
+        [data-theme="dark"] .imp-drop:hover, [data-theme="dark"] .imp-drop.over, [data-theme="dark"] .imp-drop:focus-visible { background: rgba(16,185,129,0.12); }
+        .imp-drop-icon { font-size: 30px; }
+        .imp-drop-title { font-weight: 700; font-size: 15px; }
+        .imp-drop-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+        .imp-or { display: flex; align-items: center; gap: 12px; margin: 18px 0; color: var(--text-secondary); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+        .imp-or::before, .imp-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+        .imp-text { resize: vertical; min-height: 110px; line-height: 1.5; }
+        .imp-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+        .imp-note { font-size: 12px; color: var(--text-secondary); margin-top: 12px; }
+        .imp-bulk { display: flex; gap: 8px; }
+        .imp-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+        .imp-tile { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; min-width: 0; }
+        .imp-tile span { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; }
+        .imp-tile b { font-size: 18px; overflow-wrap: anywhere; }
+        .imp-tile b.in { color: var(--accent); } .imp-tile b.out { color: var(--danger); }
+        .imp-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) 150px 36px 110px; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+        .imp-row.dim { opacity: .5; }
+        .imp-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+        .imp-name { width: 100%; border: 1.5px solid transparent; background: transparent; color: var(--text); font: inherit; font-weight: 600; font-size: 14px; padding: 3px 6px; margin-left: -6px; border-radius: 6px; min-width: 0; }
+        .imp-name:hover, .imp-name:focus { border-color: var(--border); background: var(--bg); outline: none; }
+        .imp-sub { font-size: 12px; color: var(--text-secondary); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; padding-left: 0; }
+        .imp-flag { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 10px; background: var(--warning-light); color: #b45309; }
+        .imp-select { width: 100%; padding: 6px 8px; font-size: 13px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-family: inherit; }
+        .imp-flip { width: 36px; height: 36px; border: 1.5px solid var(--border); background: var(--bg); color: var(--text); border-radius: 8px; cursor: pointer; font-size: 15px; }
+        .imp-flip:hover { border-color: var(--accent); color: var(--accent); }
+        .imp-amt { text-align: right; font-weight: 700; font-size: 14px; white-space: nowrap; }
+        .imp-amt.income { color: var(--accent); } .imp-amt.expense { color: var(--danger); }
+        .imp-skipped { margin-top: 14px; font-size: 12px; color: var(--text-secondary); }
+        .imp-skipped summary { cursor: pointer; font-weight: 600; }
+        .imp-skipped li { margin: 4px 0 0 18px; overflow-wrap: anywhere; }
+        .imp-bar { position: sticky; bottom: 0; margin: 16px -22px -22px; padding: 14px 22px; background: var(--card); border-top: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .imp-bar-info { font-size: 13px; color: var(--text-secondary); }
+        .imp-bar-info b { color: var(--text); }
+        .tx-source { font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); margin-left: 6px; }
+        @media (max-width: 720px) {
+            .imp-row { grid-template-columns: 22px minmax(0, 1fr) auto; grid-template-areas: "chk main amt" ". cat flip"; row-gap: 6px; }
+            .imp-row > :nth-child(1) { grid-area: chk; } .imp-row > :nth-child(2) { grid-area: main; }
+            .imp-row > :nth-child(3) { grid-area: cat; } .imp-row > :nth-child(4) { grid-area: flip; justify-self: end; }
+            .imp-row > :nth-child(5) { grid-area: amt; }
+            .imp-tiles { grid-template-columns: minmax(0, 1fr); }
+        }
     </style>
 </head>
 <body>
@@ -579,6 +625,7 @@
                         <div class="nav-section-title">Overview</div>
                         <div class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</div>
                         <div class="nav-item" data-page="transactions"><span class="nav-icon">💳</span> Transactions</div>
+                        <div class="nav-item" data-page="import"><span class="nav-icon">📲</span> Import</div>
                     </div>
                     <div class="nav-section">
                         <div class="nav-section-title">Planning</div>
@@ -678,6 +725,51 @@
                             </div>
                         </div>
                         <div id="allTransactions"></div>
+                    </div>
+                </div>
+
+                <!-- IMPORT -->
+                <div class="page-section" id="page-import">
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">Import transactions</h3></div>
+                        <p class="imp-lead">Bring in your M-Pesa, Airtel Money and bank activity. FreedomFi works out the amount, date, who it was for, money in or out, and a category. You check the list before anything is saved.</p>
+
+                        <div class="imp-drop" id="impDrop" tabindex="0" role="button" aria-label="Choose a statement file or drop it here">
+                            <div class="imp-drop-icon">📄</div>
+                            <div class="imp-drop-title">Drop a statement file here</div>
+                            <div class="imp-drop-sub">CSV export from M-Pesa or your bank</div>
+                            <button type="button" class="btn btn-primary" id="impChoose">Choose file</button>
+                            <input type="file" id="impFile" style="display:none">
+                        </div>
+
+                        <div class="imp-or"><span>or paste</span></div>
+
+                        <label class="form-label" for="impText">SMS alerts or statement rows</label>
+                        <textarea class="form-input imp-text" id="impText" rows="5" placeholder="Paste M-Pesa, Airtel Money or bank messages here. Several at once is fine. Rows copied from a statement work too."></textarea>
+                        <div class="imp-actions">
+                            <button type="button" class="btn btn-primary" id="impRead">Read</button>
+                            <button type="button" class="btn btn-outline" id="impClip">Paste from clipboard</button>
+                        </div>
+                        <p class="imp-note">Everything is read on this device. Nothing is uploaded.</p>
+                    </div>
+
+                    <div class="card imp-results" id="impResults" style="display:none;margin-top:20px">
+                        <div class="card-header"><h3 class="card-title" id="impTitle">Review</h3>
+                            <div class="imp-bulk">
+                                <button type="button" class="btn btn-outline btn-sm" id="impAll">Select all</button>
+                                <button type="button" class="btn btn-outline btn-sm" id="impNone">None</button>
+                            </div>
+                        </div>
+                        <div class="imp-tiles" id="impTiles"></div>
+                        <div id="impList"></div>
+                        <div id="impSkipped"></div>
+                        <div class="imp-bar">
+                            <div class="imp-bar-info" id="impBarInfo"></div>
+                            <div class="imp-actions" style="margin:0">
+                                <button type="button" class="btn btn-outline" id="impCancel">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="impConfirm">Add to transactions</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -894,6 +986,7 @@
         </div>
     </div>
 
+    <script src="mobile-money-parser.js"></script>
     <script>
         // ==================== AUTH ====================
         let authMode = 'login';
@@ -989,6 +1082,10 @@
                 { name: 'Utilities', icon: '⚡', color: '#f97316' },
                 { name: 'Insurance', icon: '🛡️', color: '#6366f1' },
                 { name: 'Personal', icon: '💇', color: '#14b8a6' },
+                { name: 'Airtime & Data', icon: '📶', color: '#0ea5e9' },
+                { name: 'Savings & Loans', icon: '🏦', color: '#84cc16' },
+                { name: 'Cash Withdrawal', icon: '🏧', color: '#a855f7' },
+                { name: 'Fees & Charges', icon: '🧾', color: '#f43f5e' },
                 { name: 'Other', icon: '📦', color: '#64748b' }
             ],
             income: [
@@ -1036,6 +1133,7 @@
             setGreeting(s.name !== 'Friend' ? s.name : activeUser);
             populateCategorySelects();
             renderAll();
+            initImport();
 
             document.querySelectorAll('.nav-item[data-page]').forEach(item => {
                 item.addEventListener('click', () => navigateTo(item.dataset.page));
@@ -1166,19 +1264,32 @@
         function renderAllTransactions() {
             let txs = getData('transactions').sort((a, b) => new Date(b.date) - new Date(a.date));
             const s = getSettings();
-            const filterCat = document.getElementById('filterCategory').value;
+            const sel = document.getElementById('filterCategory');
+            const allCats = [...new Set(getData('transactions').map(t => t.category).filter(Boolean))].sort();
+            let filterCat = sel.value;
+            if (filterCat !== 'all' && !allCats.includes(filterCat)) filterCat = 'all';
+            sel.innerHTML = '<option value="all">All Categories</option>' + allCats.map(c => `<option value="${c}" ${c === filterCat ? 'selected' : ''}>${c}</option>`).join('');
             const filterType = document.getElementById('filterType').value;
             const search = document.getElementById('searchTx').value.toLowerCase();
             if (filterCat !== 'all') txs = txs.filter(t => t.category === filterCat);
             if (filterType !== 'all') txs = txs.filter(t => t.type === filterType);
-            if (search) txs = txs.filter(t => t.name.toLowerCase().includes(search) || t.category.toLowerCase().includes(search));
+            if (search) txs = txs.filter(t => String(t.name || '').toLowerCase().includes(search) || String(t.category || '').toLowerCase().includes(search));
             const el = document.getElementById('allTransactions');
-            if (!txs.length) { el.innerHTML = '<div class="empty-state"><div class="emoji">🔍</div><p>No matching transactions found.</p></div>'; return; }
+            if (!txs.length) {
+                const total = getData('transactions').length;
+                el.innerHTML = total
+                    ? `<div class="empty-state"><div class="emoji">🔍</div><p>No transactions match your filters (${total} saved in total).</p><button class="btn btn-outline btn-sm" onclick="resetTxFilters()">Clear filters</button></div>`
+                    : '<div class="empty-state"><div class="emoji">📭</div><p>No transactions yet.</p></div>';
+                return;
+            }
             el.innerHTML = txs.map(t => txHTML(t, s, true)).join('');
-            const allCats = [...new Set(getData('transactions').map(t => t.category))].sort();
-            const sel = document.getElementById('filterCategory');
-            const current = sel.value;
-            sel.innerHTML = '<option value="all">All Categories</option>' + allCats.map(c => `<option value="${c}" ${c === current ? 'selected' : ''}>${c}</option>`).join('');
+        }
+
+        function resetTxFilters() {
+            document.getElementById('filterType').value = 'all';
+            document.getElementById('searchTx').value = '';
+            document.getElementById('filterCategory').value = 'all';
+            renderAllTransactions();
         }
 
         function txHTML(t, s, showDelete = false) {
@@ -1188,7 +1299,7 @@
                     <div class="tx-icon" style="background:${cat.color}15">${cat.icon}</div>
                     <div class="tx-details">
                         <div class="tx-name">${t.name}</div>
-                        <div class="tx-category">${t.category}</div>
+                        <div class="tx-category">${t.category}${t.source ? `<span class="tx-source">${t.source}</span>` : ''}</div>
                     </div>
                     <div>
                         <div class="tx-amount ${t.type}">${t.type === 'expense' ? '-' : '+'}${s.currency}${formatNum(t.amount)}</div>
@@ -1562,6 +1673,184 @@
             a.href = URL.createObjectURL(blob);
             a.download = filename;
             a.click();
+        }
+
+        // ==================== IMPORT ====================
+        let impRows = [];
+
+        function impEsc(v) {
+            return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+
+        function impLoad(res) {
+            const existing = getData('transactions');
+            const known = new Set(existing.map(t => t.key).filter(Boolean));
+            const manual = new Set(existing.filter(t => !t.key).map(t => [t.date, t.type, Number(t.amount).toFixed(2)].join('|')));
+            impRows = res.txs.map(t => {
+                const dup = known.has(t.key);
+                const maybe = !dup && manual.has([t.date, t.type, Number(t.amount).toFixed(2)].join('|'));
+                return { ...t, dup, maybe, selected: !dup && !maybe };
+            });
+            impRender(res);
+        }
+
+        function impReadText() {
+            const text = document.getElementById('impText').value;
+            if (!text.trim()) return alert('Paste at least one message or some statement rows first.');
+            impLoad(FreedomParser.parseAuto(text));
+        }
+
+        function impHandleFile(file) {
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) return alert('That file is too large (max 5 MB).');
+            const name = (file.name || '').toLowerCase();
+            if (/\.(xlsx|xls|ods)$/.test(name)) return alert('Excel files can\'t be read directly yet. Save it as CSV from Excel or Google Sheets and upload that.');
+            if (/\.pdf$/.test(name)) return alert('PDF statements can\'t be read directly yet. Copy the transaction rows from the PDF and paste them into the box, or download the CSV version if your provider offers it.');
+            const reader = new FileReader();
+            reader.onload = () => {
+                const text = String(reader.result || '').replace(/^\uFEFF/, '');
+                const res = FreedomParser.parseAuto(text);
+                if (!res.txs.length) {
+                    document.getElementById('impText').value = text.slice(0, 20000);
+                    impLoad(res);
+                    return;
+                }
+                impLoad(res);
+            };
+            reader.onerror = () => alert('Could not read that file.');
+            reader.readAsText(file);
+        }
+
+        function impRender(res) {
+            const s = getSettings();
+            const card = document.getElementById('impResults');
+            card.style.display = '';
+            const fmt = n => s.currency + formatNum(n);
+            const sel = impRows.filter(t => t.selected);
+            const inc = sel.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
+            const exp = sel.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
+            document.getElementById('impTitle').textContent = impRows.length
+                ? `${impRows.length} transaction${impRows.length === 1 ? '' : 's'} found` : 'Nothing found';
+
+            document.getElementById('impTiles').innerHTML = impRows.length ? `
+                <div class="imp-tile"><span>Money in</span><b class="in">+${impEsc(fmt(inc))}</b></div>
+                <div class="imp-tile"><span>Money out</span><b class="out">-${impEsc(fmt(exp))}</b></div>
+                <div class="imp-tile"><span>Net</span><b>${inc - exp < 0 ? '-' : ''}${impEsc(fmt(Math.abs(inc - exp)))}</b></div>` : '';
+
+            const list = document.getElementById('impList');
+            if (!impRows.length) {
+                list.innerHTML = '<div class="empty-state"><div class="emoji">🤔</div><p>No transactions could be read. Paste SMS alerts that include the amount and words like Confirmed, debited or credited, or statement rows that each have a date and an amount (with the header row if you have it).</p></div>';
+            } else {
+                list.innerHTML = impRows.map((t, i) => {
+                    let cats = CATEGORIES[t.type];
+                    if (!cats.some(c => c.name === t.category)) cats = cats.concat([{ name: t.category, icon: '📦' }]);
+                    const opts = cats.map(c => `<option value="${impEsc(c.name)}" ${c.name === t.category ? 'selected' : ''}>${c.icon} ${impEsc(c.name)}</option>`).join('');
+                    const flags = (t.dup ? '<span class="imp-flag">Already added</span>' : '')
+                        + (t.maybe ? '<span class="imp-flag">Similar entry exists</span>' : '')
+                        + (t.confidence === 'medium' ? '<span class="imp-flag">Check direction</span>' : '');
+                    const dis = t.dup ? 'disabled' : '';
+                    return `
+                    <div class="imp-row ${t.dup ? 'dim' : ''}">
+                        <input type="checkbox" ${t.selected ? 'checked' : ''} ${dis} data-i="${i}" data-act="sel" aria-label="Include this transaction">
+                        <div style="min-width:0">
+                            <input class="imp-name" value="${impEsc(t.name)}" ${dis} data-i="${i}" data-act="name" aria-label="Description" maxlength="60">
+                            <div class="imp-sub"><span>${impEsc(formatDate(t.date))}</span><span>·</span><span>${impEsc(t.source)}</span>${flags}</div>
+                        </div>
+                        <select class="imp-select" ${dis} data-i="${i}" data-act="cat" aria-label="Category">${opts}</select>
+                        <button type="button" class="imp-flip" ${dis} data-i="${i}" data-act="flip" title="Switch between money in and money out" aria-label="Switch between money in and money out">⇄</button>
+                        <div class="imp-amt ${t.type}">${t.type === 'expense' ? '-' : '+'}${impEsc(fmt(t.amount))}</div>
+                    </div>`;
+                }).join('');
+            }
+
+            const sk = (res && res.skipped || []).filter(x => !/Duplicate/.test(x.reason));
+            document.getElementById('impSkipped').innerHTML = sk.length
+                ? `<details class="imp-skipped"><summary>${sk.length} skipped</summary><ul>${sk.map(x => `<li><b>${impEsc(x.reason)}:</b> ${impEsc(x.raw)}</li>`).join('')}</ul></details>` : '';
+
+            document.getElementById('impBarInfo').innerHTML = `<b>${sel.length}</b> of ${impRows.length} selected`;
+            const btn = document.getElementById('impConfirm');
+            btn.textContent = sel.length ? `Add ${sel.length} to transactions` : 'Add to transactions';
+            btn.disabled = !sel.length;
+            btn.style.opacity = sel.length ? '' : '.5';
+            if (res) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function impSetAll(on) {
+            impRows.forEach(t => { if (!t.dup) t.selected = on; });
+            impRender(null);
+        }
+
+        function impConfirm() {
+            const chosen = impRows.filter(t => t.selected && !t.dup);
+            if (!chosen.length) return;
+            const txs = getData('transactions');
+            const known = new Set(txs.map(t => t.key).filter(Boolean));
+            let added = 0;
+            chosen.forEach(t => {
+                if (known.has(t.key)) return;
+                known.add(t.key);
+                txs.push({ id: uid(), name: (t.name || '').trim() || 'Transaction', amount: t.amount, type: t.type, category: t.category, date: t.date, source: t.source, key: t.key });
+                added++;
+            });
+            setData('transactions', txs);
+            impCancel();
+            resetTxFilters();
+            alert(`Added ${added} transaction${added === 1 ? '' : 's'}.`);
+            navigateTo('transactions');
+        }
+
+        function impCancel() {
+            impRows = [];
+            document.getElementById('impText').value = '';
+            document.getElementById('impResults').style.display = 'none';
+        }
+
+        let importReady = false;
+        function initImport() {
+            if (importReady) return;
+            importReady = true;
+            const drop = document.getElementById('impDrop'), file = document.getElementById('impFile');
+            document.getElementById('impChoose').addEventListener('click', e => { e.stopPropagation(); file.click(); });
+            drop.addEventListener('click', () => file.click());
+            drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
+            file.addEventListener('change', () => { const f = file.files && file.files[0]; file.value = ''; impHandleFile(f); });
+            ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+            ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+            drop.addEventListener('drop', e => impHandleFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]));
+
+            const ta = document.getElementById('impText');
+            ta.addEventListener('paste', () => setTimeout(() => { if (ta.value.trim()) impReadText(); }, 0));
+            document.getElementById('impRead').addEventListener('click', impReadText);
+            document.getElementById('impClip').addEventListener('click', async () => {
+                try {
+                    const t = await navigator.clipboard.readText();
+                    if (!t || !t.trim()) return alert('Your clipboard is empty.');
+                    ta.value = t; impReadText();
+                } catch { alert('Your browser blocked clipboard access. Paste into the box with Ctrl+V (or long-press) instead.'); }
+            });
+            document.getElementById('impAll').addEventListener('click', () => impSetAll(true));
+            document.getElementById('impNone').addEventListener('click', () => impSetAll(false));
+            document.getElementById('impCancel').addEventListener('click', impCancel);
+            document.getElementById('impConfirm').addEventListener('click', impConfirm);
+
+            const list = document.getElementById('impList');
+            list.addEventListener('change', e => {
+                const i = +e.target.dataset.i, act = e.target.dataset.act;
+                if (isNaN(i) || !impRows[i]) return;
+                if (act === 'sel') { impRows[i].selected = e.target.checked; impRender(null); }
+                else if (act === 'cat') impRows[i].category = e.target.value;
+                else if (act === 'name') impRows[i].name = e.target.value;
+            });
+            list.addEventListener('click', e => {
+                const b = e.target.closest('[data-act="flip"]');
+                if (!b) return;
+                const t = impRows[+b.dataset.i];
+                if (!t) return;
+                t.type = t.type === 'income' ? 'expense' : 'income';
+                t.category = FreedomParser.categorize(t.name, t.type, '');
+                t.confidence = 'high';
+                impRender(null);
+            });
         }
 
         // ==================== NAVIGATION ====================
