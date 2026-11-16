@@ -1242,19 +1242,32 @@
         function renderAllTransactions() {
             let txs = getData('transactions').sort((a, b) => new Date(b.date) - new Date(a.date));
             const s = getSettings();
-            const filterCat = document.getElementById('filterCategory').value;
+            const sel = document.getElementById('filterCategory');
+            const allCats = [...new Set(getData('transactions').map(t => t.category).filter(Boolean))].sort();
+            let filterCat = sel.value;
+            if (filterCat !== 'all' && !allCats.includes(filterCat)) filterCat = 'all';
+            sel.innerHTML = '<option value="all">All Categories</option>' + allCats.map(c => `<option value="${c}" ${c === filterCat ? 'selected' : ''}>${c}</option>`).join('');
             const filterType = document.getElementById('filterType').value;
             const search = document.getElementById('searchTx').value.toLowerCase();
             if (filterCat !== 'all') txs = txs.filter(t => t.category === filterCat);
             if (filterType !== 'all') txs = txs.filter(t => t.type === filterType);
-            if (search) txs = txs.filter(t => t.name.toLowerCase().includes(search) || t.category.toLowerCase().includes(search));
+            if (search) txs = txs.filter(t => String(t.name || '').toLowerCase().includes(search) || String(t.category || '').toLowerCase().includes(search));
             const el = document.getElementById('allTransactions');
-            if (!txs.length) { el.innerHTML = '<div class="empty-state"><div class="emoji">🔍</div><p>No matching transactions found.</p></div>'; return; }
+            if (!txs.length) {
+                const total = getData('transactions').length;
+                el.innerHTML = total
+                    ? `<div class="empty-state"><div class="emoji">🔍</div><p>No transactions match your filters (${total} saved in total).</p><button class="btn btn-outline btn-sm" onclick="resetTxFilters()">Clear filters</button></div>`
+                    : '<div class="empty-state"><div class="emoji">📭</div><p>No transactions yet.</p></div>';
+                return;
+            }
             el.innerHTML = txs.map(t => txHTML(t, s, true)).join('');
-            const allCats = [...new Set(getData('transactions').map(t => t.category))].sort();
-            const sel = document.getElementById('filterCategory');
-            const current = sel.value;
-            sel.innerHTML = '<option value="all">All Categories</option>' + allCats.map(c => `<option value="${c}" ${c === current ? 'selected' : ''}>${c}</option>`).join('');
+        }
+
+        function resetTxFilters() {
+            document.getElementById('filterType').value = 'all';
+            document.getElementById('searchTx').value = '';
+            document.getElementById('filterCategory').value = 'all';
+            renderAllTransactions();
         }
 
         function txHTML(t, s, showDelete = false) {
@@ -1772,6 +1785,7 @@
             });
             setData('transactions', txs);
             clearImport();
+            resetTxFilters();
             renderAll();
             alert(`Added ${added} transaction${added === 1 ? '' : 's'}.`);
             navigateTo('transactions');
@@ -1830,7 +1844,7 @@
                     added++;
                 });
             });
-            if (added) { setData('transactions', txs); renderAll(); }
+            if (added) { setData('transactions', txs); resetTxFilters(); renderAll(); }
             try { A.ack(JSON.stringify(ids)); } catch {}
             if (added) showToast(`📲 ${added} new transaction${added === 1 ? '' : 's'} captured`);
             return added;
