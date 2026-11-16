@@ -437,7 +437,8 @@
 
     const COL = {
         date: /date|time|completion/i,
-        desc: /detail|description|narration|particular|remark|transaction\s*type|^type$/i,
+        desc: /detail|description|narration|particular|remark|transaction\s*type/i,
+        dc: /^(?:type|dr\s*\/?\s*cr|cr\s*\/?\s*dr|d\s*\/\s*c|dc|indicator|debit\s*\/\s*credit|txn\s*type)$/i,
         paidIn: /paid\s*in|credit|deposit|money\s*in|\bcr\b/i,
         out: /withdraw|debit|paid\s*out|money\s*out|\bdr\b/i,
         amount: /^amount$|^value$/i,
@@ -460,6 +461,7 @@
                 if (COL.balance.test(c)) { map.balance = idx; return; }
                 if (COL.ref.test(c) && map.ref === undefined) map.ref = idx;
                 else if (COL.status.test(c)) map.status = idx;
+                else if (COL.dc.test(c) && map.dc === undefined) map.dc = idx;
                 else if (COL.paidIn.test(c) && map.paidIn === undefined) map.paidIn = idx;
                 else if (COL.out.test(c) && map.out === undefined) map.out = idx;
                 else if (COL.amount.test(c) && map.amount === undefined) map.amount = idx;
@@ -500,8 +502,11 @@
                 const v = toNumber(c[cols.amount]);
                 if (!isNaN(v) && v !== 0) {
                     amount = Math.abs(v);
+                    const flag = cols.dc !== undefined ? String(c[cols.dc] || '').trim() : '';
                     const byText = detectType(details);
-                    type = v < 0 ? 'expense' : (byText || 'income');
+                    if (/^(?:dr|d|debit|db|withdrawal|out)$/i.test(flag)) type = 'expense';
+                    else if (/^(?:cr|c|credit|deposit|in)$/i.test(flag)) type = 'income';
+                    else type = v < 0 ? 'expense' : (byText || 'income');
                 }
             }
             if (!amount || isNaN(amount) || !type) { skipped.push({ raw: lines[i].slice(0, 120), reason: 'No amount' }); continue; }
@@ -521,5 +526,86 @@
         return { txs, skipped, total };
     }
 
-    return { parseMessage, parseMany, parseStatementCSV, splitMessages, parseDate, categorize, sanitize, detectProvider };
+
+    // ---------- statements pasted as plain text (copied from a PDF, web page or Excel) ----------
+    const MONEY_RE = /-?\(?\d{1,3}(?:,\d{3})+\.\d{1,2}\)?|-?\(?\d+\.\d{1,2}\)?/g;
+    const INCOME_HINT = /\b(?:received|from|deposit(?:ed)?|salary|reversal|refund|credited|promotion|interest|dividend|cash in)\b/i;
+    const STATUS_RE = /\b(COMPLETED|SUCCESS(?:FUL)?|FAILED|CANCELL?ED|DECLINED|REVERSED|PENDING)\b/i;
+
+    function parseStatementText(text, opts) {
+        opts = opts || {};
+        const lines = String(text || '').replace(/\r/g, '').split('\n').map(l => l.trim()).filter(Boolean);
+        const txs = [], skipped = [], seen = new Set();
+        let total = 0;
+
+        lines.forEach(line => {
+            const date = parseDate(line, opts.today);
+            if (!date) return;
+            // Remove date, time and phone-like numbers so they are not mistaken for money.
+            let work = line
+                .replace(/\d{4}-\d{2}-\d{2}/g, ' ')
+                .replace(/\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}/g, ' ')
+                .replace(/\d{1,2}[\s\-][A-Za-z]{3,9}\.?,?[\s\-]\d{2,4}/g, ' ')
+                .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?\b/gi, ' ');
+            const refM = work.match(/^\s*([A-Z0-9]{10})\b/);
+            const ref = refM && /\d/.test(refM[1]) && /[A-Z]/.test(refM[1]) ? refM[1] : null;
+            if (ref) work = work.replace(ref, ' ');
+
+            const nums = [];
+            let m;
+            MONEY_RE.lastIndex = 0;
+            while ((m = MONEY_RE.exec(work))) nums.push({ v: toNumber(m[0]), at: m.index, raw: m[0] });
+            if (!nums.length) return;
+            total++;
+
+            const st = work.match(STATUS_RE);
+            if (st && /FAIL|CANCEL|DECLIN|REVERS/i.test(st[1])) { skipped.push({ raw: line.slice(0, 120), reason: 'Failed transaction' }); return; }
+
+            const details = sanitize(work.slice(0, nums[0].at).replace(STATUS_RE, ' ').replace(/\s-\s/g, ' '), 80);
+            const vals = nums.length >= 2 ? nums.slice(0, -1) : nums;   // last number is the running balance
+            let amount = NaN, type = null, confident = true;
+
+            if (vals.length >= 2) {
+                // Paid In / Withdrawn style columns: whichever is non-zero.
+                const a = vals[0].v, b = vals[1].v;
+                if (a && !b) { amount = Math.abs(a); type = 'income'; }
+                else if (b && !a) { amount = Math.abs(b); type = 'expense'; }
+                else { amount = Math.abs(a || b); type = (a < 0 || b < 0) ? 'expense' : (INCOME_HINT.test(details) ? 'income' : 'expense'); confident = false; }
+            } else {
+                const v = vals[0].v;
+                amount = Math.abs(v);
+                if (/^\(|-/.test(vals[0].raw)) type = 'expense';
+                else { type = INCOME_HINT.test(details) ? 'income' : (detectType(details) || 'expense'); confident = false; }
+            }
+            if (!amount || isNaN(amount)) { skipped.push({ raw: line.slice(0, 120), reason: 'No amount' }); return; }
+
+            const source = ref ? 'M-Pesa' : (opts.source || 'Statement');
+            const kind = type === 'expense' && looksLikeFee(details) ? 'fee'
+                : type === 'expense' && /\bwithdraw/i.test(details) && !/charge/i.test(details) ? 'withdraw'
+                : type === 'expense' && /airtime/i.test(details) ? 'airtime' : '';
+            const name = details || (type === 'income' ? 'Incoming payment' : 'Payment');
+            const key = makeKey(source, ref, date, type, amount, name);
+            if (seen.has(key)) { skipped.push({ raw: line.slice(0, 120), reason: 'Duplicate row' }); return; }
+            seen.add(key);
+            txs.push({
+                name: sanitize(name, 60), amount: round2(amount), type, category: categorize(details, type, kind),
+                date, source, ref, key, confidence: confident ? 'high' : 'medium', raw: line.slice(0, 200)
+            });
+        });
+        return { txs, skipped, total };
+    }
+
+    // Accepts anything the user might paste or upload and works out what it is:
+    // a CSV/Excel-style table, lines copied from a statement, or SMS alerts.
+    function parseAuto(text, opts) {
+        const table = parseStatementCSV(text, opts);
+        if (!table.error && table.txs.length) return Object.assign(table, { kind: 'statement' });
+        const lines = parseStatementText(text, opts);
+        const sms = parseMany(text, opts);
+        if (lines.txs.length > sms.txs.length) return Object.assign(lines, { kind: 'statement' });
+        if (sms.txs.length) return Object.assign(sms, { kind: 'sms' });
+        return { txs: [], skipped: sms.skipped.concat(lines.skipped), total: sms.total, kind: 'none', error: table.error };
+    }
+
+    return { parseMessage, parseMany, parseStatementCSV, parseStatementText, parseAuto, splitMessages, parseDate, categorize, sanitize, detectProvider };
 });

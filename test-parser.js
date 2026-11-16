@@ -150,5 +150,28 @@ check('signed csv', c.txs.length === 2 && c.txs[0].type === 'expense' && c.txs[1
 
 check('bad csv error', !!P.parseStatementCSV('foo,bar\n1,2', { today }).error);
 
+// ---- parseAuto: pasted statements, PDF-copied lines, DR/CR column ----
+const tabTable = 'Receipt No.\tCompletion Time\tDetails\tStatus\tPaid In\tWithdrawn\tBalance\nQKA1ABC123\t2026-11-10 10:00:00\tCustomer Transfer to - 0712345678 JOHN\tCOMPLETED\t\t-1,500.00\t3,000.00\nQKA2ABC123\t2026-11-09 09:00:00\tFunds received from ACME\tCOMPLETED\t25,000.00\t\t28,000.00';
+let a = P.parseAuto(tabTable, { today });
+check('auto tab table', a.txs.length === 2 && a.txs[0].type === 'expense' && a.txs[1].type === 'income', a);
+
+const pdfLines = 'QKA1ABC123 2026-11-10 10:00:00 Customer Transfer to - 0712345678 JOHN KAMAU COMPLETED 0.00 -1,500.00 3,000.00\nQKA2ABC123 2026-11-09 09:00:00 Funds received from - 0722000111 ACME COMPLETED 25,000.00 0.00 28,000.00\nQKA3ABC123 2026-11-08 08:00:00 Pay Bill to 888880 - KPLC PREPAID Acc. 123 COMPLETED 0.00 -500.00 2,500.00\nQKA4ABC123 2026-11-07 07:00:00 Pay Bill to 1 FAILED 0.00 -50.00 2,500.00';
+a = P.parseAuto(pdfLines, { today });
+check('auto pdf lines count', a.txs.length === 3, a);
+check('auto pdf lines types', a.txs[0].type === 'expense' && a.txs[0].amount === 1500 && a.txs[1].type === 'income' && a.txs[1].amount === 25000, a.txs);
+check('auto pdf lines utilities', a.txs[2].category === 'Utilities', a.txs[2]);
+check('auto pdf failed skipped', a.skipped.some(x => /Failed/.test(x.reason)), a.skipped);
+check('auto pdf phone not amount', a.txs.every(t => t.amount < 100000));
+
+// SMS must still be treated as SMS, not as statement lines
+a = P.parseAuto('QKJ7H2X9AB Confirmed. Ksh1,500.00 sent to JOHN KAMAU 0712345678 on 12/11/26 at 2:15 PM. New M-PESA balance is Ksh3,250.50. Transaction cost, Ksh23.00.', { today });
+check('auto keeps sms', a.kind === 'sms' && a.txs.length === 2 && a.txs[0].amount === 1500, a);
+
+c = P.parseStatementCSV('Date,Description,Amount,Type,Balance\n2026-11-10,POS QUICKMART,3200.00,DR,5000\n2026-11-11,SALARY,80000.00,CR,85000', { today });
+check('dr/cr column', c.txs[0].type === 'expense' && c.txs[1].type === 'income', c.txs);
+
+a = P.parseAuto('hello this is not a statement', { today });
+check('auto nothing', a.txs.length === 0 && a.kind === 'none');
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

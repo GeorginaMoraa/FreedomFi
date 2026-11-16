@@ -5,9 +5,13 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.ClipboardManager
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.webkit.JavascriptInterface
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -25,6 +29,8 @@ class MainActivity : Activity() {
     private lateinit var web: WebView
 
     private val host = "appassets.androidplatform.net"
+    private val fileRequest = 202
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +64,30 @@ class MainActivity : Activity() {
             }
         }
 
+        // Without this the <input type="file"> in the web page silently does nothing inside a WebView.
+        web.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                view: WebView,
+                callback: ValueCallback<Array<Uri>>,
+                params: FileChooserParams
+            ): Boolean {
+                filePathCallback?.onReceiveValue(null)
+                filePathCallback = callback
+                val pick = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"   // CSV files are reported under many different MIME types
+                }
+                return try {
+                    startActivityForResult(Intent.createChooser(pick, "Choose statement"), fileRequest)
+                    true
+                } catch (e: Exception) {
+                    filePathCallback = null
+                    callback.onReceiveValue(null)
+                    false
+                }
+            }
+        }
+
         web.addJavascriptInterface(Bridge(), "FreedomAndroid")
 
         if (savedInstanceState == null) web.loadUrl("https://$host/assets/index.html")
@@ -78,6 +108,16 @@ class MainActivity : Activity() {
     override fun onPause() {
         PendingStore.listener = null
         super.onPause()
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != fileRequest) return
+        val result: Array<Uri>? =
+            if (resultCode == RESULT_OK && data != null) WebChromeClient.FileChooserParams.parseResult(resultCode, data) else null
+        filePathCallback?.onReceiveValue(result)
+        filePathCallback = null
     }
 
     @Deprecated("Deprecated in Java")
@@ -106,6 +146,12 @@ class MainActivity : Activity() {
             runOnUiThread {
                 requestPermissions(arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS), 101)
             }
+        }
+
+        @JavascriptInterface
+        fun getClipboard(): String {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            return cm.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this@MainActivity)?.toString().orEmpty()
         }
 
         @JavascriptInterface

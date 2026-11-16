@@ -728,7 +728,7 @@
                         <div class="import-actions">
                             <button class="btn btn-primary" onclick="previewImport()">🔍 Read Messages</button>
                             <label class="btn btn-outline" for="importFile" style="cursor:pointer">📄 Upload Statement (CSV)</label>
-                            <input type="file" id="importFile" accept=".csv,.txt,text/csv,text/plain" style="display:none" onchange="handleImportFile(this)">
+                            <input type="file" id="importFile" style="display:none" onchange="handleImportFile(this)">
                             <button class="btn btn-outline" onclick="pasteFromClipboard()">📋 Paste from Clipboard</button>
                         </div>
                         <p class="import-note">🔒 Everything is processed on this device only. Messages are never uploaded. Bank and mobile money PDFs: open in Excel/Sheets or ask your provider for the CSV version.</p>
@@ -1651,7 +1651,8 @@
             const text = document.getElementById('importText').value;
             if (!text.trim()) return alert('Paste at least one message first.');
             if (typeof FreedomParser === 'undefined') return alert('The message reader failed to load. Refresh the page and try again.');
-            showImportResult(FreedomParser.parseMany(text));
+            const res = FreedomParser.parseAuto(text);
+            showImportResult(res);
         }
 
         function handleImportFile(input) {
@@ -1660,14 +1661,16 @@
             if (!file) return;
             if (file.size > 5 * 1024 * 1024) return alert('That file is too large (max 5 MB).');
             const reader = new FileReader();
+            const lower = (file.name || '').toLowerCase();
+            if (/\.(xlsx|xls|ods)$/.test(lower)) return alert('Excel files can\'t be read directly yet. Open it in Excel or Google Sheets, choose File → Save As / Download → CSV, then upload that CSV.');
+            if (/\.pdf$/.test(lower)) return alert('PDF statements can\'t be read directly yet. Open the PDF, select the transaction rows, copy them and paste into the box above. Or download the CSV version from your bank or M-Pesa if offered.');
             reader.onload = () => {
-                const text = String(reader.result || '');
-                const res = FreedomParser.parseStatementCSV(text);
-                if (res.error) {
-                    // Might be a text export of messages instead of a table.
-                    const fallback = FreedomParser.parseMany(text);
-                    if (fallback.txs.length) return showImportResult(fallback);
-                    return alert(res.error);
+                const text = String(reader.result || '').replace(/^\uFEFF/, '');
+                const res = FreedomParser.parseAuto(text);
+                if (!res.txs.length) {
+                    document.getElementById('importText').value = text.slice(0, 20000);
+                    showImportResult(res);
+                    return alert(res.error || 'No transactions could be read from that file. It was copied into the box so you can check it. Make sure it has a header row with Date and Paid In/Withdrawn (or Debit/Credit or Amount) columns.');
                 }
                 showImportResult(res);
             };
@@ -1677,7 +1680,8 @@
 
         async function pasteFromClipboard() {
             try {
-                const t = await navigator.clipboard.readText();
+                const A = androidBridge();
+                const t = A && A.getClipboard ? A.getClipboard() : await navigator.clipboard.readText();
                 if (!t || !t.trim()) return alert('Your clipboard is empty.');
                 document.getElementById('importText').value = t;
                 previewImport();
@@ -1710,7 +1714,7 @@
 
             const list = document.getElementById('importPreviewList');
             if (!pendingImport.length) {
-                list.innerHTML = '<div class="empty-state"><div class="emoji">🤔</div><p>No transactions could be read from that text. Check that it includes the amount and the confirmation message.</p></div>';
+                list.innerHTML = '<div class="empty-state"><div class="emoji">🤔</div><p>No transactions could be read. Paste either SMS alerts (with the amount and "Confirmed"/"debited"/"credited") or statement rows that each include a date and an amount, ideally with the header row.</p></div>';
             } else {
                 list.innerHTML = pendingImport.map((t, i) => {
                     const cats = CATEGORIES[t.type].map(c => `<option value="${esc(c.name)}" ${c.name === t.category ? 'selected' : ''}>${c.icon} ${esc(c.name)}</option>`).join('');
